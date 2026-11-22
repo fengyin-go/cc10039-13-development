@@ -79,5 +79,25 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 共享列血缘（`column_lineage_share`）
+
+数据目录已有字段定义与安全等级，但缺少可交给其他业务域复查的共享列血缘。
+`app/services/column_lineage_share.py` 把内部原始列血缘（`column_lineage`，
+不对外暴露为业务模块）转换成共享投影：
+
+- `GET /api/column-lineage?access_domain=分析域`：按访问归属出投影；路径上的字段
+  逐级查数据目录的安全等级，受控/机密字段以及超出共享范围（`SCP-*`）的等级会被
+  **截断**，截断点之后的目标不再出现，只标记“需回原域确认”。
+- 受控字段名和访问身份一律替换为 HMAC 不可逆令牌（`col_*` / `idn_*`），
+  导出里不会出现原始受控列名或原始身份。
+- `POST /api/column-lineage/exports`：生成只读共享导出，绑定 `scope_version`
+  + `projection_version`；`POST /api/column-lineage/scopes/{domain}` 变更范围会让
+  旧导出的 `status` 变为 `stale`，旧导出不能作为新权限范围重新使用。
+- `POST /api/column-lineage/review`：血缘刷新接收共享导出，生成复查结果，
+  `verified_edges` 是当前可核的边，`pending_reviews` 是要回原域确认的路径。
+  复查结果保留当时的投影版本，`POST /api/column-lineage/publish` 发布新投影不会回写
+  已完成的复查。
+- 前端「湖表血缘」页下方有共享列血缘复查面板。
+
 领域：数据工程
 子方向：数仓与数据湖

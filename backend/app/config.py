@@ -17,6 +17,8 @@ class Settings:
     )
     page_size_default: int = 20
     page_size_max: int = 200
+    # 列血缘共享投影使用的不可逆令牌密钥：受控字段名和访问身份只以 HMAC 令牌出现。
+    lineage_hash_secret: str = "lake-storage-govern/column-lineage/v1"
 
 
 settings = Settings()

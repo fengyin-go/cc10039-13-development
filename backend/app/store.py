@@ -11,6 +11,9 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+# 只作为投影输入、不对外暴露为业务模块的内部数据集。
+INTERNAL_TABLES = {"column_lineage"}
+
 
 class Store:
     def __init__(self) -> None:
@@ -25,7 +28,8 @@ class Store:
     # ---- 基础读写 ----
 
     def module_names(self) -> list[str]:
-        return sorted(self._tables)
+        """对外可见的业务模块；内部投影输入表不列入。"""
+        return sorted(set(self._tables) - INTERNAL_TABLES)
 
     def rows(self, module: str) -> list[dict[str, Any]]:
         return self._tables.setdefault(module, [])
